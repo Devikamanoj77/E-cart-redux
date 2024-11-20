@@ -1,14 +1,44 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { decrementQuantity, emptyCart, incrementQuantity, removeCartItem } from "../redux/slice/cartSlice";
 
 const Cart = () => {
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const userCart = useSelector(state=>state.cartReducer)
+  const [cartTotal,setcartTotal] = useState(0)
+
+  useEffect(()=>{
+    if(userCart?.length>0){
+      setcartTotal(userCart?.map(item=>item.totalPrice).reduce((a,b)=>a+b))
+    }
+  },[userCart])
+
+  const handleDecrementQuantity = (product)=>{
+    if(product?.quantity>1){
+      dispatch(decrementQuantity(product.id))
+    }else{
+      dispatch(removeCartItem(product.id))
+    }
+  }
+
+  const checkout =()=>{
+    dispatch(emptyCart())
+    alert("Order Confirmed.. Thank you for purchasing with us")
+    // redirect to home
+    navigate('/')
+  }
+
   return (
     <>
       <Header />
       <div style={{ paddingTop: "100px" }} className="p-5">
-        <>
-          <h1 className="text-5xl font-bold text-blue-600">Cart Sunnary</h1>
+        {
+          userCart?.length>0 ?
+          <>
+          <h1 className="text-5xl font-bold text-blue-600">Cart Summary</h1>
           <div className="grid grid-cols-3 gap-4 mt-5">
             <div className="col-span-2 border rounded p-5 shadow">
               <table className="table-auto w-full">
@@ -23,47 +53,59 @@ const Cart = () => {
                   </tr>
                 </thead>
                 <tbody>
+                {
+                  userCart?.map((product,index)=>(
                   <tr>
-                    <td>1</td>
-                    <td>Product Name</td>
+                    <td>{index+1}</td>
+                    <td>{product.title}</td>
                     <td>
                       <img
                         width={"70px"}
                         height={"70px"}
-                        src="https://img.freepik.com/free-vector/black-friday-sale-background-with-shopping-cart_1017-27938.jpg?t=st=1731387922~exp=1731391522~hmac=f4d6d3bc1ca636837b006c3df837a0172701b4441a0954f2d465877500f9a041&w=740"
+                        src={product.thumbnail}
                         alt=""
                       />
                     </td>
                     <td>
                       <div className="flex">
-                        <button className="font-bold">-</button>
+                        <button onClick={()=>handleDecrementQuantity(product)} className="font-bold">-</button>
                         <input style={{width:'40px'}} type="text" className="border p-1 mx-2"
-                        value={12} readOnly />
-                        <button className="font-bold">+</button>
+                        value={product?.quantity} readOnly />
+                        <button onClick={()=>dispatch(incrementQuantity(product.id))} className="font-bold">+</button>
                       </div>
                     </td>
-                    <td>$250</td>
-                    <td><button className="text-red-600"><i className="fa-solid fa-trash"></i></button></td>
+                    <td>${product?.totalPrice}</td>
+                    <td><button onClick={()=>dispatch(removeCartItem(product.id))} className="text-red-600"><i className="fa-solid fa-trash"></i></button></td>
                   </tr>
+                  ))
+                }
                 </tbody>
               </table>
 
               <div className="float-right mt-5">
-                <button className="bg-red-600 rounded p-2 text-white">EMPTY CART</button>
+                <button onClick={()=>dispatch(emptyCart())} className="bg-red-600 rounded p-2 text-white">EMPTY CART</button>
                 <Link to={'/'} className='bg-blue-600 ms-3 rounded p-2 text-white' >SHOP MORE</Link>
               </div>
             </div>
 
             <div className="col-span-1">
               <div className="border rounded shadow p-5">
-                <h2 className="text-2xl font-bold">Total Amount : <span className="text-red-600">$250</span></h2>
+                <h2 className="text-2xl font-bold">Total Amount : <span className="text-red-600">${cartTotal}</span></h2>
                 <hr />
-                <button className="bg-green-600 rounded p-2 text-white w-full mt-4">CHECK OUT</button>
+                <button onClick={checkout} className="bg-green-600 rounded p-2 text-white w-full mt-4">CHECK OUT</button>
               </div>
             </div>
           </div>
-        </>
+          </>
+        
+        :
+        <div className='flex flex-col justify-center items-center'>
+          <img className='w-100 h-1/2' src="https://www.adanione.com/~/media/Foundation/Adani/emptyImages/empty_cart.gif" alt="" />
+          <h1 className='text-4xl text-red-600 mt-3'>Your Cart is empty</h1>
+        </div>
+        } 
       </div>
+      
     </>
   );
 };
